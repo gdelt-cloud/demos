@@ -18,6 +18,25 @@ This skill scaffolds a Python project that calls the GDELT Cloud REST API for a 
 - Python 3.11+ and `uv` installed
 - A clear idea of the **region** (country list + bbox) and the **persona** (analyst preparing a brief? underwriter pricing a route?)
 
+## Live reference
+
+The hosted live demo this skill is patterned after is at
+**https://gdeltcloud.com/demos/red-sea-watchboard** — visually verify your
+build matches the same layout (executive brief → KPI tiles → horizontal event
+timeline → panoramic map → macro sparkline → events / stories / entities
+footer grid). The Next.js source lives at
+`nextjs_/app/demos/red-sea-watchboard/page.tsx` in the gdelt-cloud monorepo.
+
+## Looking things up while you build
+
+For anything you need about the GDELT Cloud API, MCP, or product surfaces
+that isn't in this SKILL, connect to the **GDELT Cloud Docs MCP** at
+`https://docs.gdeltcloud.com/mcp` and call its `SearchGdeltCloud` tool. It
+indexes the full Mintlify docs site (events, stories, entities, energy
+endpoints, ranking, query patterns, plus the v2 OpenAPI spec) and returns
+direct links + snippets. Use it instead of guessing or assuming based on
+training data.
+
 ## Step 1: Scaffold the project
 
 Create a directory layout matching this skeleton:
@@ -30,7 +49,7 @@ demo-<topic>/
   .gitignore                 # .env, output/, __pycache__/, .venv/
   src/<package>/
     __init__.py
-    settings.py              # pydantic-settings, env loading, default date window
+    settings.py              # pydantic-settings, env loading, default 7d weekly window
     client.py                # httpx.Client wrapper, Bearer auth, retry-safe
     fetch.py                 # the API calls for this demo + dataclass
     render.py                # Jinja2 -> output/index.html
@@ -38,6 +57,9 @@ demo-<topic>/
   templates/
     index.html.j2            # Tailwind via CDN + Leaflet via CDN
 ```
+
+> **Default date window: last 7 days inclusive** (matches the live hosted
+> demo's weekly cadence). Override via env vars when a longer window helps.
 
 Run `uv init demo-<topic>` then edit `pyproject.toml` to add deps and a script entry.
 
@@ -66,11 +88,19 @@ def fetch_all(client, start_date, end_date):
                            limit=100, include_images="false")
     stories = client.stories(country=",".join(COUNTRIES),
                              start_date=start_date, end_date=end_date,
-                             article_count_min=8, limit=50,
-                             include_images="false")
+                             article_count_min=4, limit=50,
+                             # IMPORTANT: enable sharing-image enrichment so story
+                             # cards render with the article hero image (see the
+                             # rich story cards on the live demo). Cheap to leave
+                             # on — image_url is one extra string per story.
+                             include_images="true")
     entities = client.entities(search="<your-anchor-entity>",  # e.g. "Houthi", "IRGC"
                                start_date=start_date, end_date=end_date,
-                               limit=20, include_images="false")
+                               limit=20,
+                               # IMPORTANT: enable Wikipedia thumbnail enrichment
+                               # so entity cards render with avatars + the
+                               # compact wikipedia object (description, page_url).
+                               include_images="true")
     assets = client.energy_assets(bbox=ASSETS_BBOX,
                                   tracker="oil_gas_plants,lng_terminals",
                                   limit=40)
@@ -85,14 +115,33 @@ def fetch_all(client, start_date, end_date):
 
 `templates/index.html.j2` uses Tailwind via CDN (`cdn.tailwindcss.com`) and Leaflet via CDN (`unpkg.com/leaflet@1.9.4`). The map payload is injected as a `<script type="application/json">` block and parsed client-side.
 
-Key things to keep:
+The page order — top to bottom — should mirror the live demo so the
+deliverable feels like the hosted version:
 
-- **Stat tiles** at top: events, stories, fatal incidents, assets
-- **Leaflet map** with event markers (size = magnitude, color = Goldstein) + asset markers (squares)
-- **Events table** (top 15 by significance)
-- **Story clusters list** (top 8 by article count)
-- **Entities sidebar** (top 10 from search)
-- **Footer attribution** to the GDELT Cloud API
+1. **Executive brief** + **stat tiles**: events / story clusters / fatal incidents / energy assets.
+2. **Horizontal event timeline** — every event plotted as a colored dot on the
+   date axis between `start_date` and `end_date`. Dot color matches the
+   CAMEO+ domain (POLITICAL → azure, ECONOMIC → emerald, INFRASTRUCTURE →
+   amber, CONFLICT → rose, etc.), dot size scales with `metrics.magnitude`.
+   Hover for the title + subcategory + date; click opens the GDELT Cloud
+   event page in a new tab. The live demo's component is at
+   `nextjs_/components/demos/event-timeline.tsx` — port the same lane / radius
+   / color logic into your Jinja template.
+3. **Panoramic Leaflet map** — full-width, ~380px tall (not square). Event
+   markers sized by magnitude and colored by Goldstein severity; story
+   markers as diamonds; asset markers as squares. Layer toggle for Events /
+   Stories / Energy assets.
+4. **Macro context sparkline** — a small SVG line chart of Brent crude (or
+   the macro series relevant to your region) showing 4-6 points over the
+   last 30 days, with the last value + delta percent next to it. Spot
+   values alone aren't useful; the slope is what carries the signal.
+5. **Three-column footer**: events list / image-rich story cards / entity
+   cards. Story cards show the article sharing image, the article count,
+   linked-event count, and source domain. Entity cards show the Wikipedia
+   thumbnail (fallback: initial-on-tinted-circle) plus three horizontal
+   metric bars for Articles / Stories / Events, scaled relative to the
+   heaviest entity in the list.
+6. **Footer attribution** to the GDELT Cloud API + a link back to the repo.
 
 ## Step 5: Verify and iterate
 

@@ -28,6 +28,27 @@ This skill scaffolds a Python project that calls the GDELT Cloud REST API for a 
 - Python 3.11+ and `uv` installed
 - A clear idea of the **corridor** (country net + bbox) and the **anchor entity** (state actor, militant group, named threat)
 
+## Live reference
+
+The hosted live demo this skill is patterned after is at
+**https://gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief** —
+visually verify your build matches the same layout (executive brief →
+KPI tiles with "Energy MW at risk" → horizontal event timeline → panoramic
+map → Brent + WTI sparklines → events / image-rich story cards / entity
+cards footer grid). The Next.js source lives at
+`nextjs_/app/demos/strait-of-hormuz-underwriting-brief/page.tsx`.
+
+## Looking things up while you build
+
+For anything you need about the GDELT Cloud API, MCP, or product surfaces
+that isn't in this SKILL, connect to the **GDELT Cloud Docs MCP** at
+`https://docs.gdeltcloud.com/mcp` and call its `SearchGdeltCloud` tool. It
+indexes the full Mintlify docs site (events, stories, entities, energy
+endpoints, ranking, query patterns, plus the v2 OpenAPI spec) and returns
+direct links + snippets. Use it instead of guessing or assuming based on
+training data — and especially before making up a v2 parameter you "think"
+exists.
+
 ## Step 1: Pick a corridor and an entity anchor
 
 Use one of the menus below as your starting point — they pre-fill the country net, bbox, and a sensible entity search.
@@ -91,18 +112,27 @@ def fetch_all(client, start_date, end_date):
                            limit=100, include_images="false")
     stories = client.stories(country=",".join(COUNTRIES),
                              start_date=start_date, end_date=end_date,
-                             article_count_min=12, limit=40,        # underwriter signal threshold
-                             include_images="false")
+                             article_count_min=5, limit=40,         # underwriter signal threshold
+                             # Enable sharing-image enrichment so story cards
+                             # carry the article hero image. Matches the live
+                             # underwriting brief which leads with visual story
+                             # identity, not text-only links.
+                             include_images="true")
     entities = client.entities(search="Iran",                       # entity-anchor menu
                                start_date=start_date, end_date=end_date,
-                               limit=20, include_images="false")
+                               limit=20,
+                               # Enable Wikipedia thumbnail enrichment so the
+                               # entity sidebar shows recognizable people /
+                               # organizations rather than bare names.
+                               include_images="true")
     assets = client.energy_assets(bbox=ASSETS_BBOX,
                                   tracker="oil_gas_plants,lng_terminals",
                                   limit=60)
     return Dataset(events=events, stories=stories, entities=entities, assets=assets, ...)
 ```
 
-`article_count_min=12` filters story noise for the underwriting persona — busy corridors can push this to 15-20, quiet ones to 6-8.
+`article_count_min=5` is the live demo's threshold for the underwriting
+persona — busy corridors can push to 12-20, quiet ones to 3-4.
 
 ## Step 4: Roll up the headline figures (underwriter-flavored)
 
@@ -119,13 +149,39 @@ Fatal-incident count + total fatalities is the other underwriter-relevant headli
 
 ## Step 5: Wire the printable brief template
 
-`templates/index.html.j2` uses Tailwind via CDN and Leaflet via CDN. Critical structural pieces for the brief:
+`templates/index.html.j2` uses Tailwind via CDN and Leaflet via CDN. The
+brief is organized as **four numbered sections** that mirror the hosted
+live version — keep this order:
 
-- **Three numbered sections** in the rendered output:
-  1. **Disruption picture** — Leaflet map + asset overlay (squares for terminals, circles for events) + entities sidebar
-  2. **Marine war-risk macro** — Brent/WTI sparklines, snapshot from the MCP `macro_finance` proxy (use static placeholder values like `+5.6%` / `+6.4%` in the standalone demo; pull live values in production)
-  3. **Top events + story clusters** — table of events ranked by significance + list of story clusters by article count
-- **Print CSS** is required — wrap inside `@media print { ... }` with: page-break-inside on sections, larger header font, smaller map height (~360px), hide refresh/no-print elements, drop link underlines.
+1. **Event timeline** — horizontal strip plotting every event on the date
+   axis between `start_date` and `end_date`. Dot color matches the CAMEO+
+   domain, dot size scales with `metrics.magnitude`. Hover reveals title +
+   subcategory; click opens the GDELT Cloud event page in a new tab. Use
+   ~150px tall total and 3-4 alternating lanes around the axis so adjacent
+   dates don't pile up. The live demo's React component is the reference:
+   `nextjs_/components/demos/event-timeline.tsx`.
+2. **Strait of Hormuz disruption picture** — panoramic Leaflet map
+   (full-width, ~380px tall, not square). Squares for energy terminals,
+   circles for events sized by magnitude / colored by Goldstein, diamonds
+   for story clusters. Layer toggles for Events / Stories / Energy assets.
+3. **Marine war-risk macro** — Brent + WTI sparklines (4-6 points,
+   ~30-day window). Show last value + percent delta next to each. Source
+   is the MCP `macro_finance` proxy in production; in the standalone demo
+   ship hard-coded placeholder points so the brief is self-contained.
+4. **Events + story clusters + named entities** — three-column footer:
+   structured events list (top 15 by significance), image-rich story cards
+   (with article sharing image + linked-event count + source domain), and
+   entity cards with Wikipedia thumbnails + horizontal metric bars
+   (Articles / Stories / Events) scaled relative to the heaviest entity.
+
+Plus:
+
+- **Energy MW at risk** is the headline KPI tile underwriters care about
+  most — sum `capacity.mw` across `assets` (note the nested shape: `geo.lat`,
+  `capacity.mw`, NOT flat `latitude`/`capacity_mw`). Format as "12.4k" if >1000 MW.
+- **Print CSS** is required — wrap inside `@media print { ... }` with:
+  page-break-inside on sections, larger header font, smaller map height
+  (~360px), hide refresh/no-print elements, drop link underlines.
 - Map `setView()` per the corridor menu.
 
 ## Step 6: Verify
@@ -158,7 +214,12 @@ If data looks anemic, widen the country net or stretch the date window. For 60+ 
 - **Entity link tables only have rich coverage from April 2026 onwards.** Older windows may show empty entity panels — pivot to recent windows for entity-rich briefs.
 - **Energy assets bbox is strict** — if your corridor has no GEM-tracked infrastructure, the asset layer will be empty (and that's OK — the brief still works, just remove the asset bullet from the stat tiles).
 - **The 30-day window cap on `/api/v2/events`** means a 60d brief needs two API calls merged in Python.
-- **Macro sparklines in the standalone demo are placeholder text.** In production these come from the GDELT Cloud MCP `macro_finance` proxy (Alpha Vantage upstream); the standalone repo ships with hard-coded labels like "Brent +5.6%" / "WTI +6.4%" so the brief is fully self-contained.
+- **Macro sparklines** — the standalone demo ships with hard-coded 4-6 point
+  series so the brief is self-contained. The hosted Next.js demo pulls live
+  values from the GDELT Cloud MCP `macro_finance` proxy (Alpha Vantage
+  upstream); both render the same little SVG line + last value + percent
+  delta. Spot value alone (e.g. "Brent $89.4") doesn't carry the signal —
+  the slope does, so always render the line.
 
 ## Reference
 
