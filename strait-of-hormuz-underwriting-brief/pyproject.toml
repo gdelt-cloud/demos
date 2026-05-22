@@ -1,0 +1,20 @@
+[project]
+name = "strait-of-hormuz-underwriting-brief"
+version = "0.1.0"
+description = "GDELT Cloud demo — Strait of Hormuz war-risk underwriting brief. Generates a printable HTML report from one API key."
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "jinja2>=3.1",
+    "pydantic-settings>=2.4",
+]
+
+[project.scripts]
+hormuz = "hormuz.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hormuz"]

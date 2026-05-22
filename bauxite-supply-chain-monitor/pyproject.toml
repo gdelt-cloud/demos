@@ -1,0 +1,20 @@
+[project]
+name = "bauxite-supply-chain-monitor"
+version = "0.1.0"
+description = "GDELT Cloud demo — Bauxite supply-chain monitor covering Guinea, Indonesia, and Australia. Generates a static HTML dashboard from one API key."
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "jinja2>=3.1",
+    "pydantic-settings>=2.4",
+]
+
+[project.scripts]
+bauxite = "bauxite.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bauxite"]

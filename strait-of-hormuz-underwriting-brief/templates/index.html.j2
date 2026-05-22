@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Strait of Hormuz Underwriting Brief · GDELT Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro", Helvetica, Arial, sans-serif; }
+    .font-display { font-family: "Inter", -apple-system, sans-serif; letter-spacing: 0.02em; }
+    .neon { color: #5EAAFF; }
+    .neon-bg { background-color: rgba(94, 170, 255, 0.08); }
+    .neon-border { border-color: rgba(94, 170, 255, 0.22); }
+    .neon-emerald { color: #10b981; }
+    .neon-emerald-border { border-color: rgba(16, 185, 129, 0.22); }
+    .neon-emerald-bg { background-color: rgba(16, 185, 129, 0.04); }
+    .neon-rose { color: #f43f5e; }
+    #map { height: 520px; width: 100%; border-radius: 0.5rem; }
+    @media print {
+      body { background: #ffffff !important; }
+      .no-print { display: none !important; }
+      #map { height: 360px; }
+      section { page-break-inside: avoid; }
+      h1, h2, h3 { page-break-after: avoid; }
+      a { color: inherit; text-decoration: none; }
+      .print-break { page-break-before: always; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="mx-auto max-w-6xl px-4 py-10 md:px-8">
+    <header class="mb-8 border-b border-slate-200 pb-6">
+      <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] neon">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-[#5EAAFF]"></span>
+        War-Risk Underwriting · GDELT Cloud Demo
+      </div>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Strait of Hormuz Underwriting Brief</h1>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">
+        War-risk underwriting view of the Strait of Hormuz — sized for a marine war-risk underwriter pricing a
+        tanker hull/war policy. Structured events across Iran, Oman, UAE, Qatar; energy infrastructure exposure
+        in the Persian Gulf; story clusters; named entities. Built only on the GDELT Cloud public REST API.
+      </p>
+      <div class="mt-3 text-xs text-slate-500">
+        Window: <strong>{{ start_date }}</strong> → <strong>{{ end_date }}</strong>
+        · <span class="text-slate-400">Cmd/Ctrl+P → print to PDF</span>
+      </div>
+    </header>
+
+    <section class="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div class="rounded-lg border neon-border bg-white p-4">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Events</div>
+        <div class="mt-1 text-2xl font-bold">{{ events_count }}</div>
+        <div class="text-[11px] text-slate-500">Iran · Oman · UAE · Qatar</div>
+      </div>
+      <div class="rounded-lg border neon-border bg-white p-4">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Fatal incidents</div>
+        <div class="mt-1 text-2xl font-bold">{{ fatal_count }}</div>
+        <div class="text-[11px] text-slate-500">{{ total_fatalities }} fatalities</div>
+      </div>
+      <div class="rounded-lg border neon-border bg-white p-4">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Story clusters</div>
+        <div class="mt-1 text-2xl font-bold">{{ stories_count }}</div>
+        <div class="text-[11px] text-slate-500">≥12 articles</div>
+      </div>
+      <div class="rounded-lg border neon-border bg-white p-4">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Energy MW at risk</div>
+        <div class="mt-1 text-2xl font-bold">{{ total_capacity_label }}</div>
+        <div class="text-[11px] text-slate-500">across {{ assets_count }} assets</div>
+      </div>
+    </section>
+
+    <section class="mb-10 grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2">
+        <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Section 1 — Strait of Hormuz disruption picture
+        </h2>
+        <div id="map"></div>
+        <p class="mt-2 text-[11px] text-slate-500">
+          Circle size = magnitude · color = Goldstein severity (red severe → green cooperative) · squares = oil/gas
+          + LNG terminals across the Persian Gulf. The strait carries roughly 20% of global oil flow.
+        </p>
+      </div>
+      <aside class="space-y-4">
+        <div class="rounded-lg border neon-emerald-border neon-emerald-bg p-4">
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.18em] neon-emerald">
+            Section 2 — Marine war-risk macro
+          </h3>
+          <div class="mt-3 space-y-2">
+            <div class="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
+              <div>
+                <div class="text-[11px] uppercase tracking-wider text-slate-500">Brent (60d)</div>
+                <div class="font-mono text-sm text-slate-800">
+                  84.2 USD/bbl
+                  <span class="ml-1.5 neon-emerald">+5.6%</span>
+                </div>
+              </div>
+              <svg width="100" height="32" viewBox="0 0 100 32" class="shrink-0">
+                <path d="M0,24 L12,22 L24,23 L36,20 L48,18 L60,16 L72,14 L84,11 L100,8"
+                      fill="none" stroke="#5EAAFF" stroke-width="1.5" />
+              </svg>
+            </div>
+            <div class="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
+              <div>
+                <div class="text-[11px] uppercase tracking-wider text-slate-500">WTI (60d)</div>
+                <div class="font-mono text-sm text-slate-800">
+                  79.8 USD/bbl
+                  <span class="ml-1.5 neon-emerald">+6.4%</span>
+                </div>
+              </div>
+              <svg width="100" height="32" viewBox="0 0 100 32" class="shrink-0">
+                <path d="M0,25 L12,24 L24,22 L36,20 L48,17 L60,15 L72,12 L84,9 L100,6"
+                      fill="none" stroke="#5EAAFF" stroke-width="1.5" />
+              </svg>
+            </div>
+          </div>
+          <p class="mt-3 text-[11px] text-slate-500">
+            Snapshot from GDELT Cloud MCP macro_finance proxy. Placeholder values shown in this static demo.
+          </p>
+        </div>
+
+        <div class="rounded-lg border neon-border bg-white p-4">
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Top named entities</h3>
+          <ul class="mt-3 space-y-2 text-[13px]">
+            {% for entity in entities %}
+              <li class="flex items-center justify-between gap-2">
+                <span class="truncate">{{ entity.name }}</span>
+                <span class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] uppercase text-slate-500">
+                  {{ entity.type }}
+                </span>
+              </li>
+            {% else %}
+              <li class="text-slate-500">No entities found.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </aside>
+    </section>
+
+    <section class="print-break">
+      <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Section 3 — Top events + story clusters
+      </h2>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div>
+          <div class="overflow-hidden rounded-lg border neon-border bg-white">
+            <div class="border-b border-slate-200 px-3 py-2 text-[10px] uppercase tracking-wider text-slate-500">
+              Events · by significance
+            </div>
+            <table class="w-full text-[13px]">
+              <tbody>
+                {% for event in top_events %}
+                  <tr class="border-b border-slate-100 last:border-0">
+                    <td class="px-3 py-2 text-slate-500" style="width: 90px;">
+                      <div>{{ event.event_date }}</div>
+                      <div class="text-[10px] text-slate-400">{{ event.country }}</div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="line-clamp-2 leading-snug">{{ event.title or "—" }}</div>
+                      <div class="mt-0.5 text-[10px] text-slate-400">
+                        {{ event.event_family }} · {{ event.category }} · Gold:
+                        {{ "%.1f"|format(event.goldstein) if event.goldstein is not none else "—" }}
+                        · Mag: {{ "%.1f"|format(event.magnitude) if event.magnitude is not none else "—" }}
+                        {% if event.fatalities and event.fatalities > 0 %}
+                          <span class="ml-1 neon-rose">· {{ event.fatalities }} fatal</span>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <ul class="space-y-3">
+            {% for story in top_stories %}
+              <li class="rounded-lg border neon-border bg-white p-3">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-[13px] font-medium leading-snug">{{ story.label }}</div>
+                    <div class="mt-1 text-[11px] text-slate-500">
+                      {{ story.cluster_date }} · {{ story.article_count }} articles
+                    </div>
+                  </div>
+                  <span class="shrink-0 rounded neon-bg px-1.5 py-0.5 font-mono text-[10px] uppercase neon">
+                    sig {{ "%.2f"|format(story.significance) }}
+                  </span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="mt-10 rounded-lg border border-slate-200 bg-white p-4 text-[12px] text-slate-600">
+      <strong class="text-slate-900">How this brief is built:</strong> every panel above is rendered from the
+      GDELT Cloud public REST API (events, stories, entities, energy assets) plus a snapshot of the MCP
+      macro_finance proxy for Brent / WTI. Clone the repo at
+      <a class="neon hover:underline" href="https://github.com/gdelt-cloud/demos/tree/main/strait-of-hormuz-underwriting-brief" target="_blank">github.com/gdelt-cloud/demos</a>,
+      set your <code class="rounded bg-slate-100 px-1.5 py-0.5">GDELT_API_KEY</code>, and run
+      <code class="rounded bg-slate-100 px-1.5 py-0.5">uv run python -m hormuz</code>.
+    </footer>
+  </main>
+
+  <script id="map-payload" type="application/json">{{ map_payload_json|safe }}</script>
+  <script>
+    (function () {
+      var payload = JSON.parse(document.getElementById('map-payload').textContent);
+      var map = L.map('map').setView([26, 55], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+      }).addTo(map);
+
+      (payload.assets || []).forEach(function (asset) {
+        var marker = L.marker([asset.latitude, asset.longitude], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="width:10px;height:10px;background:#16a34a;border:1px solid #064e3b;box-shadow:0 0 6px rgba(22,163,74,.55)"></div>',
+          }),
+        }).addTo(map);
+        marker.bindPopup('<strong>' + (asset.name || 'asset') + '</strong><br>' + (asset.tracker || ''));
+      });
+
+      (payload.events || []).forEach(function (event) {
+        var size = event.marker_size || 10;
+        var color = event.marker_color || '#94a3b8';
+        var marker = L.circleMarker([event.latitude, event.longitude], {
+          radius: size / 2,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.55,
+          weight: 1,
+        }).addTo(map);
+        var popup = '<strong style="color:' + color + '">' + (event.event_family || '') + ' · ' + (event.category || '') + '</strong>';
+        popup += '<br>' + (event.title || '—');
+        popup += '<br><span style="color:#64748b;font-size:11px">' + (event.event_date || '') + ' · ' + (event.country || '') + '</span>';
+        marker.bindPopup(popup);
+      });
+    })();
+  </script>
+</body>
+</html>
