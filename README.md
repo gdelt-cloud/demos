@@ -2,7 +2,7 @@
 
 > Three customer-shaped workflow dashboards built **only on the GDELT Cloud public REST API**. Each demo is a self-contained Python project — pulls structured events, story clusters, named entities, and (where relevant) energy infrastructure exposure for a specific operating picture, then renders a **single static HTML report** you can open in a browser, share as a link, or print to PDF.
 
-Each demo report is a weekly operating picture: an executive brief, a geographic map with event/story/asset markers, a row of country cards with the GDELT Cloud event metrics that matter for that workflow (propagation potential, market sensitivity, systemic importance, Goldstein severity), and a feed of structured events grouped by country alongside the article clusters by reach.
+Each demo report is a weekly operating picture: an executive brief, a horizontal event timeline plotting structured incidents on the date axis, a panoramic geographic map with event/story/asset markers, a row of country cards with the GDELT Cloud event metrics that matter for that workflow (propagation potential, market sensitivity, systemic importance, Goldstein severity), a macro / market trend sparkline, and image-rich story-cluster + entity cards alongside the structured events feed.
 
 | 🛰️ Demo | 👤 Persona | 🗺️ Region |
 |---|---|---|

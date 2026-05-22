@@ -66,7 +66,7 @@ demo-<corridor>-brief/
   src/<package>/
     __init__.py
     __main__.py              # so `python -m <package>` works
-    settings.py              # pydantic-settings, env loading, default 30d window
+    settings.py              # pydantic-settings, env loading, default 7d weekly window
     client.py                # httpx.Client wrapper, Bearer auth, retry-safe
     fetch.py                 # the 4 API calls + Dataset dataclass
     render.py                # Jinja2 -> output/index.html, rolls up capacity_mw

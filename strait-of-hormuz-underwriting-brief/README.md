@@ -1,6 +1,6 @@
 # ⚓ GDELT Cloud Demo — Strait of Hormuz Underwriting Brief
 
-> A **printable war-risk underwriting view** of the Strait of Hormuz, built only on the GDELT Cloud public REST API. Sized for a marine war-risk underwriter pricing a tanker hull/war policy: 30-day operating picture, energy-asset exposure across the Persian Gulf, named entities and story clusters around Iran, with a Brent/WTI macro sidebar.
+> A **printable war-risk underwriting view** of the Strait of Hormuz, built only on the GDELT Cloud public REST API. Sized for a marine war-risk underwriter pricing a tanker hull/war policy: weekly operating picture (last 7 days), energy-asset exposure across the Persian Gulf, named entities and story clusters around Iran, with a Brent/WTI macro sidebar.
 
 🌍 **Live version:** [gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief](https://gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief) · 📦 **Repo:** [github.com/gdelt-cloud/demos](https://github.com/gdelt-cloud/demos/tree/main/strait-of-hormuz-underwriting-brief)
 
