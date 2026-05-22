@@ -55,13 +55,15 @@ def fetch_all(client: GdeltCloudClient, start_date: str, end_date: str) -> Datas
             limit=60,
             include_images="false",
         )
+        # include_images="true" so the cross-country "Top story clusters"
+        # panel at the bottom renders rich image cards (matches the live demo).
         stories = client.stories(
             country=c["iso3"],
             start_date=start_date,
             end_date=end_date,
             search=COMMODITY_SEARCH,
             limit=10,
-            include_images="false",
+            include_images="true",
         )
 
         per_country.append(

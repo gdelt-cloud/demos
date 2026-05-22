@@ -31,20 +31,22 @@ def fetch_all(client: GdeltCloudClient, start_date: str, end_date: str) -> Datas
         limit=100,
         include_images="false",
     )
+    # include_images="true" so story cards render with article sharing images
+    # and the entity sidebar shows Wikipedia thumbnails — matches the live demo.
     stories = client.stories(
         country=",".join(COUNTRIES),
         start_date=start_date,
         end_date=end_date,
-        article_count_min=12,
+        article_count_min=5,
         limit=40,
-        include_images="false",
+        include_images="true",
     )
     entities = client.entities(
         start_date=start_date,
         end_date=end_date,
         search="Iran",
         limit=20,
-        include_images="false",
+        include_images="true",
     )
     assets = client.energy_assets(
         bbox=ASSETS_BBOX,

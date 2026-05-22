@@ -8,35 +8,67 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro", Helvetica, Arial, sans-serif; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro", Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #0f172a; }
     .font-display { font-family: "Inter", -apple-system, sans-serif; letter-spacing: 0.02em; }
-    .neon { color: #5EAAFF; }
-    .neon-bg { background-color: rgba(94, 170, 255, 0.08); }
-    .neon-border { border-color: rgba(94, 170, 255, 0.22); }
-    #map { height: 460px; width: 100%; border-radius: 0.5rem; }
+    .neon { color: #2e8de0; }
+    .neon-bg { background-color: rgba(46, 141, 224, 0.06); }
+    .neon-border { border-color: rgba(46, 141, 224, 0.20); }
+
+    /* Panoramic Leaflet map — matches the live demo's wider/shorter aspect. */
+    #map { height: 380px; width: 100%; border-radius: 0.5rem; }
     @media print {
       .no-print { display: none !important; }
       #map { height: 320px; }
     }
+
+    /* Event timeline */
+    .tl-axis {
+      background: linear-gradient(90deg, rgba(46,141,224,0.20), rgba(46,141,224,0.55), rgba(31,148,102,0.35));
+    }
+    .tl-dot {
+      transition: transform 120ms ease;
+    }
+    .tl-dot:hover { transform: scale(1.15); }
+    .tl-tooltip {
+      position: absolute;
+      width: 240px;
+      pointer-events: none;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 12px 32px -12px rgba(0,0,0,0.22);
+      border-radius: 0.5rem;
+      padding: 0.55rem 0.7rem;
+      visibility: hidden;
+    }
+    .tl-link:hover .tl-tooltip { visibility: visible; }
+
+    /* Story / entity card hover */
+    .card-link { transition: background-color 120ms ease, border-color 120ms ease; }
+    .card-link:hover { background-color: rgba(46,141,224,0.05); }
+
+    /* Entity metric bar */
+    .entity-bar { background-color: rgba(15,23,42,0.08); height: 6px; border-radius: 999px; overflow: hidden; }
+    .entity-bar > div { height: 100%; border-radius: 999px; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <main class="mx-auto max-w-6xl px-4 py-10 md:px-8">
-    <header class="mb-8 border-b border-slate-200 pb-6">
+<body>
+  <main class="mx-auto max-w-7xl px-4 py-10 md:px-8">
+    <header class="mb-6 border-b border-slate-200 pb-6">
       <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] neon">
         <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
         Maritime Intelligence · GDELT Cloud Demo
       </div>
       <h1 class="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Red Sea Threat Watchboard</h1>
       <p class="mt-2 max-w-3xl text-sm text-slate-600">
-        Operating picture of Bab-el-Mandeb and the Red Sea coastline — structured events, energy infrastructure
-        exposure, story clusters, and named entities. Built only on the GDELT Cloud public REST API.
+        Weekly operating picture of the Red Sea coastline — structured events, energy infrastructure exposure,
+        story clusters, and named entities. Built only on the GDELT Cloud public REST API.
       </p>
       <div class="mt-3 text-xs text-slate-500">
         Window: <strong>{{ start_date }}</strong> → <strong>{{ end_date }}</strong>
       </div>
     </header>
 
+    <!-- KPI tiles -->
     <section class="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
       <div class="rounded-lg border neon-border bg-white p-4">
         <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Events</div>
@@ -46,7 +78,7 @@
       <div class="rounded-lg border neon-border bg-white p-4">
         <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Story clusters</div>
         <div class="mt-1 text-2xl font-bold">{{ stories_count }}</div>
-        <div class="text-[11px] text-slate-500">≥8 articles</div>
+        <div class="text-[11px] text-slate-500">≥4 articles</div>
       </div>
       <div class="rounded-lg border neon-border bg-white p-4">
         <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Fatal incidents</div>
@@ -56,148 +88,344 @@
       <div class="rounded-lg border neon-border bg-white p-4">
         <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500">Energy assets</div>
         <div class="mt-1 text-2xl font-bold">{{ assets_count }}</div>
-        <div class="text-[11px] text-slate-500">in Bab-el-Mandeb bbox</div>
+        <div class="text-[11px] text-slate-500">oil/gas + LNG terminals</div>
       </div>
     </section>
 
-    <section class="mb-10 grid gap-6 lg:grid-cols-3">
-      <div class="lg:col-span-2">
-        <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Geographic picture</h2>
-        <div id="map"></div>
-        <p class="mt-2 text-[11px] text-slate-500">
-          Circle size = magnitude · color = Goldstein severity (red severe → green cooperative) · squares = oil/LNG
-          terminals in Bab-el-Mandeb bbox.
-        </p>
-      </div>
-      <aside>
-        <div class="rounded-lg border neon-border bg-white p-4">
-          <h3 class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Top named entities</h3>
-          <ul class="mt-3 space-y-2 text-[13px]">
-            {% for entity in entities %}
-              <li class="flex items-center justify-between gap-2">
-                <span class="truncate">{{ entity.name }}</span>
-                <span class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] uppercase text-slate-500">
-                  {{ entity.type }}
+    <!-- Horizontal event timeline -->
+    <section class="mb-8">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-3 flex items-baseline justify-between gap-3">
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Event timeline · structured incidents by date
+          </h3>
+          <span class="font-mono text-[10px] text-slate-400">
+            {{ start_date }} → {{ end_date }} · {{ timeline_events|length }} events
+          </span>
+        </div>
+        <div class="relative" style="height: 150px;">
+          <!-- axis -->
+          <div class="tl-axis pointer-events-none absolute left-0 right-0" style="top: 75px; height: 1px;"></div>
+          <!-- day markers -->
+          {% for m in day_markers %}
+            <div class="pointer-events-none absolute" style="left: {{ m.pct }}%; top: 71px;">
+              <div class="h-2 w-px bg-slate-300"></div>
+              <div class="mt-1 -translate-x-1/2 text-[9px] uppercase tracking-[0.14em] text-slate-400">{{ m.label }}</div>
+            </div>
+          {% endfor %}
+          <!-- event dots -->
+          {% for ev in timeline_events %}
+            {% set top = 75 + ev.lane * 22 - ev.r %}
+            <a class="tl-link" href="{{ ev.url or '#' }}" {% if ev.url %}target="_blank" rel="noopener noreferrer"{% endif %}>
+              <span class="tl-dot absolute flex items-center justify-center rounded-full bg-white"
+                    style="top: {{ top }}px; left: calc({{ ev.pct }}% - {{ ev.r }}px); width: {{ ev.r * 2 }}px; height: {{ ev.r * 2 }}px; border: 2px solid {{ ev.color }};">
+                <svg width="{{ ev.icon_px }}" height="{{ ev.icon_px }}" viewBox="0 0 24 24" fill="none"
+                     stroke="{{ ev.color }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="{{ ev.icon_d }}"></path>
+                </svg>
+              </span>
+              <span class="tl-tooltip"
+                    style="left: {% if ev.pct < 18 %}{{ ev.pct }}%; transform: translateX(0){% elif ev.pct > 82 %}auto; right: {{ 100 - ev.pct }}%; transform: translateX(0){% else %}{{ ev.pct }}%; transform: translateX(-50%){% endif %};
+                           {% if ev.lane > 0 %}top: {{ top + ev.r * 2 + 6 }}px;{% else %}top: {{ top - 80 }}px;{% endif %}
+                           border: 1px solid {{ ev.color }};">
+                <span class="text-[10px] uppercase tracking-wider font-semibold" style="color: {{ ev.color }};">
+                  {{ ev.category or (ev.family or '') | upper or 'Event' }}{% if ev.subcategory %} · <span class="text-slate-500">{{ ev.subcategory }}</span>{% endif %}
                 </span>
+                <div class="mt-0.5 text-[12px] font-medium leading-snug text-slate-800 line-clamp-3">{{ ev.title or '—' }}</div>
+                <div class="mt-1 font-mono text-[10px] text-slate-500">{{ ev.event_date }}{% if ev.country %} · {{ ev.country }}{% endif %}</div>
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+        <div class="mt-2 flex items-center gap-x-3 text-[9px] uppercase tracking-[0.14em] text-slate-500">
+          <span>Hover any dot for detail · click to open the event page</span>
+          <span class="text-slate-300">·</span>
+          <span>Size = magnitude · Color = category</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panoramic geographic picture -->
+    <section class="mb-8">
+      <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Geographic picture</h2>
+      <div id="map"></div>
+      <p class="mt-3 text-[12px] text-slate-500">
+        <span class="font-semibold uppercase tracking-wider text-slate-600">Legend ·</span>
+        <span class="inline-block h-2 w-2 rounded-full align-middle" style="background:#ef4444"></span> circles =
+        events (size = magnitude, color = Goldstein severity) ·
+        <span class="inline-block h-2 w-2 align-middle border border-emerald-500" style="background:rgba(16,185,129,0.5)"></span>
+        squares = oil/gas + LNG terminals · click any marker for detail.
+      </p>
+    </section>
+
+    <!-- Macro sparkline -->
+    {% if macro_series %}
+    <section class="mb-8">
+      <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Macro context · 30-day market trend
+      </h2>
+      <div class="rounded-lg border bg-emerald-50/40 p-4" style="border-color: rgba(31,148,102,0.22)">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {% for s in macro_series %}
+            <div class="flex flex-col gap-1">
+              <div class="flex items-baseline justify-between gap-2">
+                <span class="text-[10px] uppercase tracking-[0.16em] text-slate-500 font-semibold">{{ s.label }}</span>
+                <div class="flex items-baseline gap-2 font-mono">
+                  <span class="text-[13px] text-slate-700">
+                    {{ "%.1f"|format(s.last) }} <span class="text-[10px] text-slate-400">{{ s.unit }}</span>
+                  </span>
+                  <span class="text-[10px]" style="color: {{ s.color }};">
+                    {% if s.direction == 'up' %}▲{% elif s.direction == 'down' %}▼{% else %}·{% endif %}
+                    {% if s.delta_pct >= 0 %}+{% endif %}{{ "%.1f"|format(s.delta_pct) }}%
+                  </span>
+                </div>
+              </div>
+              <svg viewBox="0 0 {{ s.width }} {{ s.height }}" height="{{ s.height }}" class="block w-full">
+                <line x1="0" x2="{{ s.width }}" y1="{{ s.height - 0.5 }}" y2="{{ s.height - 0.5 }}"
+                      stroke="rgba(15,23,42,0.10)" stroke-width="1"/>
+                <path d="{{ s.path_d }}" fill="none" stroke="{{ s.color }}" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <div class="flex justify-between font-mono text-[9px] text-slate-400">
+                <span>{{ s.first_date }}</span>
+                <span>{{ s.last_date }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Events / Stories / Entities footer grid -->
+    <section class="mb-10 grid gap-6 lg:grid-cols-12">
+      <!-- Events -->
+      <div class="lg:col-span-5">
+        <h2 class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <span class="inline-flex h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+          Events · structured incidents · by significance
+        </h2>
+        <div class="rounded-lg border neon-border bg-white">
+          <ul class="divide-y divide-slate-100">
+            {% for ev in top_events %}
+              <li>
+                <a class="card-link block rounded-r-lg p-3" href="{{ ev.url or '#' }}"
+                   {% if ev.url %}target="_blank" rel="noopener noreferrer"{% endif %}
+                   style="border-left: 2px solid {{ ev.category_color }};">
+                  <div class="flex items-start gap-2">
+                    <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                          style="background-color: {{ ev.category_color }}1f">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="{{ ev.category_color }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="{{ ev.category_icon_d }}"></path>
+                      </svg>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-baseline gap-1.5 text-[11px] text-slate-500">
+                        <span class="font-semibold uppercase tracking-wider" style="color: {{ ev.category_color }};">
+                          {{ ev.category or (ev.family or '') | upper or '—' }}
+                        </span>
+                        {% if ev.subcategory %}<span class="text-[10px] uppercase tracking-wider text-slate-600">{{ ev.subcategory }}</span>{% endif %}
+                      </div>
+                      <div class="mt-0.5 font-mono text-[10px] text-slate-500">
+                        {{ ev.event_date }}{% if ev.country %} · {{ ev.country }}{% endif %}
+                      </div>
+                      <div class="mt-1 text-[13px] leading-snug text-slate-800">{{ ev.title or '—' }}</div>
+                      <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                        {% if ev.goldstein is not none %}
+                          <span class="rounded px-1.5 py-0.5"
+                                style="background-color: {% if ev.goldstein <= -6 %}rgba(220,38,38,0.15){% elif ev.goldstein <= -3 %}rgba(234,88,12,0.15){% elif ev.goldstein <= 0 %}rgba(245,158,11,0.15){% elif ev.goldstein <= 3 %}rgba(132,204,22,0.15){% else %}rgba(22,163,74,0.15){% endif %};
+                                       color: {% if ev.goldstein <= -6 %}#dc2626{% elif ev.goldstein <= -3 %}#ea580c{% elif ev.goldstein <= 0 %}#b45309{% elif ev.goldstein <= 3 %}#65a30d{% else %}#16a34a{% endif %};">
+                            <span class="uppercase opacity-75">Goldstein</span> <span class="font-semibold">{{ "%.1f"|format(ev.goldstein) }}</span>
+                          </span>
+                        {% endif %}
+                        {% if ev.magnitude is not none %}
+                          <span class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">
+                            <span class="uppercase opacity-75">Mag</span> <span class="font-semibold">{{ "%.1f"|format(ev.magnitude) }}</span>
+                          </span>
+                        {% endif %}
+                        {% if ev.propagation and ev.propagation > 0 %}
+                          <span class="rounded px-1.5 py-0.5 text-white"
+                                style="background-color: {% if ev.propagation >= 0.7 %}#dc2626{% elif ev.propagation >= 0.5 %}#ea580c{% elif ev.propagation >= 0.3 %}#f59e0b{% else %}#84cc16{% endif %};">
+                            <span class="uppercase opacity-75">Propagation</span> <span class="font-semibold">{{ "%d"|format((ev.propagation * 100)|round) }}%</span>
+                          </span>
+                        {% endif %}
+                        {% if ev.market_sensitivity and ev.market_sensitivity > 0 %}
+                          <span class="rounded px-1.5 py-0.5 text-white"
+                                style="background-color: {% if ev.market_sensitivity >= 0.7 %}#dc2626{% elif ev.market_sensitivity >= 0.5 %}#ea580c{% elif ev.market_sensitivity >= 0.3 %}#f59e0b{% else %}#84cc16{% endif %};">
+                            <span class="uppercase opacity-75">Mkt sens</span> <span class="font-semibold">{{ "%d"|format((ev.market_sensitivity * 100)|round) }}%</span>
+                          </span>
+                        {% endif %}
+                        {% if ev.systemic and ev.systemic > 0 %}
+                          <span class="rounded px-1.5 py-0.5 text-white"
+                                style="background-color: {% if ev.systemic >= 0.7 %}#dc2626{% elif ev.systemic >= 0.5 %}#ea580c{% elif ev.systemic >= 0.3 %}#f59e0b{% else %}#84cc16{% endif %};">
+                            <span class="uppercase opacity-75">Systemic</span> <span class="font-semibold">{{ "%d"|format((ev.systemic * 100)|round) }}%</span>
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </a>
               </li>
             {% else %}
-              <li class="text-slate-500">No entities found.</li>
+              <li class="p-6 text-center text-[12px] text-slate-500">No events in window.</li>
             {% endfor %}
           </ul>
         </div>
-      </aside>
-    </section>
-
-    <section class="grid gap-6 lg:grid-cols-2">
-      <div>
-        <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Top events · by significance
-        </h2>
-        <div class="overflow-hidden rounded-lg border neon-border bg-white">
-          <table class="w-full text-[13px]">
-            <thead class="border-b border-slate-200 text-left">
-              <tr class="text-[10px] uppercase tracking-wider text-slate-500">
-                <th class="px-3 py-2">Date · country</th>
-                <th class="px-3 py-2">Event</th>
-                <th class="px-3 py-2 text-right">Gold</th>
-                <th class="px-3 py-2 text-right">Mag</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for event in top_events %}
-                <tr class="border-b border-slate-100 last:border-0">
-                  <td class="px-3 py-2 text-slate-500">
-                    <div>{{ event.event_date }}</div>
-                    <div class="text-[10px] text-slate-400">{{ event.country }}</div>
-                  </td>
-                  <td class="px-3 py-2">
-                    <div class="line-clamp-2 leading-snug">{{ event.title or "—" }}</div>
-                    <div class="mt-0.5 text-[10px] text-slate-400">
-                      {{ event.event_family }} · {{ event.category }}
-                    </div>
-                  </td>
-                  <td class="px-3 py-2 text-right font-mono text-slate-700">
-                    {{ "%.1f"|format(event.goldstein) if event.goldstein is not none else "—" }}
-                  </td>
-                  <td class="px-3 py-2 text-right font-mono text-slate-700">
-                    {{ "%.1f"|format(event.magnitude) if event.magnitude is not none else "—" }}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
       </div>
 
-      <div>
-        <h2 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Story clusters · by article count
+      <!-- Image-rich Story cards -->
+      <div class="lg:col-span-4">
+        <h2 class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <span class="inline-flex h-1.5 w-1.5 rotate-45 bg-violet-500"></span>
+          Stories · article clusters · by reach
         </h2>
         <ul class="space-y-3">
-          {% for story in top_stories %}
-            <li class="rounded-lg border neon-border bg-white p-3">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-[13px] font-medium leading-snug">{{ story.label }}</div>
-                  <div class="mt-1 text-[11px] text-slate-500">
-                    {{ story.cluster_date }} · {{ story.article_count }} articles
+          {% for s in top_stories %}
+            <li>
+              <a class="card-link group block overflow-hidden rounded-lg border bg-violet-50/30 hover:bg-violet-50/60"
+                 style="border-color: rgba(139,92,246,0.22)"
+                 href="{{ s.url or '#' }}" {% if s.url %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                <div class="flex gap-3 p-3">
+                  <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-violet-100">
+                    {% if s.image_url %}
+                      <img src="{{ s.image_url }}" alt="" referrerpolicy="no-referrer" loading="lazy" class="h-full w-full object-cover">
+                    {% else %}
+                      <div class="flex h-full w-full items-center justify-center text-violet-500">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/>
+                        </svg>
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-baseline justify-between gap-2 text-[10px] text-slate-500">
+                      <div class="flex flex-wrap items-baseline gap-1.5">
+                        <span class="rounded bg-violet-100 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-violet-700">Story</span>
+                        {% if s.cluster_date %}<span class="font-mono">{{ s.cluster_date }}</span>{% endif %}
+                        {% if s.country %}<span class="uppercase tracking-wider">· {{ s.country }}</span>{% endif %}
+                      </div>
+                      <span class="font-mono text-slate-400">sig {{ "%.2f"|format(s.significance) }}</span>
+                    </div>
+                    <div class="mt-1 line-clamp-2 text-[13px] font-medium leading-snug text-slate-800">{{ s.label }}</div>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                      <span class="rounded bg-slate-100 px-1.5 py-0.5 uppercase tracking-wider text-slate-600">{{ s.article_count }} articles</span>
+                      {% if s.linked_event_count > 0 %}
+                        <span class="rounded bg-sky-50 px-1.5 py-0.5 uppercase tracking-wider text-sky-700">
+                          {{ s.linked_event_count }} linked {{ 'event' if s.linked_event_count == 1 else 'events' }}
+                        </span>
+                      {% endif %}
+                      {% if s.category %}
+                        <span class="rounded bg-slate-100 px-1.5 py-0.5 uppercase tracking-wider text-slate-600">{{ s.category }}{% if s.subcategory %} · {{ s.subcategory }}{% endif %}</span>
+                      {% endif %}
+                      {% if s.source_domain %}<span class="text-slate-400">via {{ s.source_domain }}</span>{% endif %}
+                    </div>
                   </div>
                 </div>
-                <span class="shrink-0 rounded neon-bg px-1.5 py-0.5 font-mono text-[10px] uppercase neon">
-                  sig {{ "%.2f"|format(story.significance) }}
-                </span>
-              </div>
+              </a>
             </li>
+          {% else %}
+            <li class="text-[12px] text-slate-500">No story clusters in window.</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Entity cards with thumbnails + relative-metric bars -->
+      <div class="lg:col-span-3">
+        <h2 class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <span class="inline-flex h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+          Named entities
+        </h2>
+        <ul class="space-y-2">
+          {% for ent in entities %}
+            {% set initial = (ent.name or '?')[0]|upper %}
+            <li>
+              <a class="card-link group block rounded-lg border bg-white p-2.5"
+                 style="border-color: rgba(46,141,224,0.20)"
+                 href="{{ ent.wikipedia_url or '#' }}" {% if ent.wikipedia_url %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                <div class="flex items-start gap-2.5">
+                  <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-sky-50">
+                    {% if ent.image_url %}
+                      <img src="{{ ent.image_url }}" alt="" referrerpolicy="no-referrer" loading="lazy" class="h-full w-full object-cover">
+                    {% else %}
+                      <div class="flex h-full w-full items-center justify-center font-semibold text-sky-600 text-sm">{{ initial }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-[13px] font-medium leading-snug text-slate-800">{{ ent.name }}</div>
+                    <div class="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">{{ ent.type }}</div>
+                  </div>
+                </div>
+                <div class="mt-2 space-y-1">
+                  {% set article_pct = (ent.article_count / entity_scale.article_max * 100) if entity_scale.article_max > 0 else 0 %}
+                  {% set story_pct = (ent.story_count / entity_scale.story_max * 100) if entity_scale.story_max > 0 else 0 %}
+                  {% set event_pct = (ent.event_count / entity_scale.event_max * 100) if entity_scale.event_max > 0 else 0 %}
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-12 shrink-0 text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Articles</span>
+                    <div class="entity-bar relative flex-1"><div style="width: {{ [article_pct, 2]|max }}%; background-color: #2e8de0"></div></div>
+                    <span class="w-8 shrink-0 text-right font-mono text-[10px] text-slate-700">{{ ent.article_count }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-12 shrink-0 text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Stories</span>
+                    <div class="entity-bar relative flex-1"><div style="width: {{ [story_pct, 2]|max }}%; background-color: #8b5cf6"></div></div>
+                    <span class="w-8 shrink-0 text-right font-mono text-[10px] text-slate-700">{{ ent.story_count }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-12 shrink-0 text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Events</span>
+                    <div class="entity-bar relative flex-1"><div style="width: {{ [event_pct, 2]|max }}%; background-color: #ef4444"></div></div>
+                    <span class="w-8 shrink-0 text-right font-mono text-[10px] text-slate-700">{{ ent.event_count }}</span>
+                  </div>
+                </div>
+              </a>
+            </li>
+          {% else %}
+            <li class="text-[12px] text-slate-500">No entity results.</li>
           {% endfor %}
         </ul>
       </div>
     </section>
 
-    <footer class="mt-10 rounded-lg border border-slate-200 bg-white p-4 text-[12px] text-slate-600">
-      <strong class="text-slate-900">How this demo is built:</strong> every panel above is rendered from the
-      GDELT Cloud public REST API (events, stories, entities, energy assets), no proprietary data sources.
-      Clone the repo at
-      <a class="neon hover:underline" href="https://github.com/gdelt-cloud/demos/tree/main/red-sea-watchboard" target="_blank">github.com/gdelt-cloud/demos</a>,
-      set your <code class="rounded bg-slate-100 px-1.5 py-0.5">GDELT_API_KEY</code>, and run
-      <code class="rounded bg-slate-100 px-1.5 py-0.5">uv run python -m maritime</code>.
+    <footer class="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
+      Built only on the GDELT Cloud public REST API. Source repo:
+      <a class="text-sky-600 hover:underline" href="https://github.com/gdelt-cloud/demos" target="_blank" rel="noopener noreferrer">github.com/gdelt-cloud/demos</a>.
     </footer>
   </main>
 
-  <script id="map-payload" type="application/json">{{ map_payload_json|safe }}</script>
+  <script type="application/json" id="map-payload">{{ map_payload_json | safe }}</script>
   <script>
-    (function () {
-      var payload = JSON.parse(document.getElementById('map-payload').textContent);
-      var map = L.map('map').setView([17, 44.5], 4);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-      }).addTo(map);
+    const payload = JSON.parse(document.getElementById('map-payload').textContent);
+    const map = L.map('map').setView([22, 40], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 12,
+    }).addTo(map);
 
-      (payload.assets || []).forEach(function (asset) {
-        var marker = L.marker([asset.latitude, asset.longitude], {
-          icon: L.divIcon({
-            className: '',
-            html: '<div style="width:10px;height:10px;background:#16a34a;border:1px solid #064e3b;box-shadow:0 0 6px rgba(22,163,74,.55)"></div>',
-          }),
-        }).addTo(map);
-        marker.bindPopup('<strong>' + (asset.name || 'asset') + '</strong><br>' + (asset.tracker || ''));
+    for (const ev of payload.events) {
+      if (ev.latitude == null || ev.longitude == null) continue;
+      const marker = L.circleMarker([ev.latitude, ev.longitude], {
+        radius: (ev.marker_size || 10) / 2.2,
+        color: ev.marker_color,
+        fillColor: ev.marker_color,
+        fillOpacity: 0.65,
+        weight: 1.5,
       });
-
-      (payload.events || []).forEach(function (event) {
-        var size = event.marker_size || 10;
-        var color = event.marker_color || '#94a3b8';
-        var marker = L.circleMarker([event.latitude, event.longitude], {
-          radius: size / 2,
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.55,
-          weight: 1,
-        }).addTo(map);
-        var popup = '<strong style="color:' + color + '">' + (event.event_family || '') + ' · ' + (event.category || '') + '</strong>';
-        popup += '<br>' + (event.title || '—');
-        popup += '<br><span style="color:#64748b;font-size:11px">' + (event.event_date || '') + ' · ' + (event.country || '') + '</span>';
-        marker.bindPopup(popup);
+      const title = (ev.title || '').replace(/</g, '&lt;');
+      marker.bindPopup(`<strong>${title}</strong><br><span style="font-size:11px;color:#64748b">${ev.event_date || ''} · ${ev.country || ''}</span>`);
+      marker.addTo(map);
+    }
+    for (const asset of payload.assets) {
+      if (asset.latitude == null || asset.longitude == null) continue;
+      const m = L.marker([asset.latitude, asset.longitude], {
+        icon: L.divIcon({
+          html: '<div style="width:10px;height:10px;border:1.5px solid #10b981;background:rgba(16,185,129,0.5);"></div>',
+          className: '',
+          iconSize: [10, 10],
+        }),
       });
-    })();
+      const name = (asset.name || '').replace(/</g, '&lt;');
+      m.bindPopup(`<strong>${name}</strong><br><span style="font-size:11px;color:#64748b">${asset.tracker || ''}${asset.capacity_mw ? ' · ' + asset.capacity_mw + ' MW' : ''}</span>`);
+      m.addTo(map);
+    }
   </script>
 </body>
 </html>

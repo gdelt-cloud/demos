@@ -6,3 +6,5 @@ __pycache__/
 output/
 .python-version
 .DS_Store
+
+uv.lock
