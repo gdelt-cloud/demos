@@ -10,16 +10,16 @@
 
 ## 📊 What it shows
 
-- 📍 Structured **events** in Iran, Oman, UAE, Qatar (Strait of Hormuz littoral) over the last 30 days
-- 🛢️ **Energy infrastructure** (oil/gas + LNG terminals) across the Persian Gulf bbox — `capacity_mw` rolled up as the **"Energy MW at risk"** headline figure
+- ✨ **Executive brief** with a war-risk-underwriter takeaway (e.g. "premium uplift 15-35bps")
+- 📍 Structured **events** in Iran, Oman, UAE, Qatar (Strait of Hormuz littoral), grouped by country with full CAMEO+ + Conflict subcategory labels and per-event metric chips (Goldstein severity, magnitude, propagation potential, market sensitivity, systemic importance)
+- 🛢️ **Energy infrastructure** (oil/gas + LNG terminals) across the Persian Gulf bbox — `capacity.mw` rolled up as the **"Energy MW at risk"** headline figure
 - 📰 **Story clusters** narrating the disruption picture (≥12 articles, filtered for high signal)
 - 👥 **Named entities** linked to "Iran" search context
-- 🗺️ An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + asset squares
-- 📈 A **Brent / WTI macro sidebar** (in production: sourced from the GDELT Cloud MCP `macro_finance` proxy)
+- 🗺️ An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + asset squares + toggleable Events / Stories / Energy assets layers
+- 📈 A **Brent / WTI macro sidebar** (sourced from the GDELT Cloud MCP `macro_finance` proxy)
 - 🖨️ **Print-CSS** for clean Cmd/Ctrl+P → PDF export
-- ✨ **Executive brief** with a war-risk-underwriter takeaway (e.g. "premium uplift 15-35bps")
 
-Pulls four endpoints:
+Pulls these endpoints:
 
 ```
 GET /api/v2/events?country=IRN,OMN,ARE,QAT&...

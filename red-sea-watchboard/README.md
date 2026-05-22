@@ -10,14 +10,15 @@
 
 ## 📊 What it shows
 
-- 📍 Structured **events** in Yemen, Djibouti, Eritrea, Saudi Arabia, Egypt, Israel (Houthi-target countries + Red Sea coastline) over the last 30 days
-- 🛢️ **Energy infrastructure** (oil/gas + LNG terminals) along the Red Sea + Levant
-- 📰 **Story clusters** narrating the threat picture
-- 👥 **Named entities** linked to "Houthi" search context
-- 🗺️ An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + toggleable layers
 - ✨ **Executive brief** auto-generated from the data — paste it straight into a client email
+- 📍 Structured **events** along the Red Sea coastline (Yemen, Djibouti, Eritrea, Saudi Arabia, Egypt, Israel) with full CAMEO+ + Conflict subcategory labels and the per-event metric chips (Goldstein severity, magnitude, propagation potential, market sensitivity, systemic importance)
+- 🛢️ **Energy infrastructure** (oil/gas + LNG terminals) along the Red Sea + Levant
+- 📰 **Story clusters** narrating the threat picture, sized by article reach
+- 👥 **Named entities** linked to "Houthi" search context
+- 🗺️ An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + toggleable Events / Stories / Energy assets layers
+- 🛡️ **Macro context** sidebar — Brent crude spot from the GDELT Cloud macro_finance proxy
 
-Pulls four endpoints:
+Pulls these endpoints:
 
 ```
 GET /api/v2/events?country=YEM,DJI,ERI,SAU,EGY,ISR&...

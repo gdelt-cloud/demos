@@ -2,13 +2,15 @@
 
 > Three customer-shaped workflow dashboards built **only on the GDELT Cloud public REST API**. Each demo is a self-contained Python project — pulls structured events, story clusters, named entities, and (where relevant) energy infrastructure exposure for a specific operating picture, then renders a **single static HTML report** you can open in a browser, share as a link, or print to PDF.
 
+Each demo report is a weekly operating picture: an executive brief, a geographic map with event/story/asset markers, a row of country cards with the GDELT Cloud event metrics that matter for that workflow (propagation potential, market sensitivity, systemic importance, Goldstein severity), and a feed of structured events grouped by country alongside the article clusters by reach.
+
 | 🛰️ Demo | 👤 Persona | 🗺️ Region |
 |---|---|---|
 | [`red-sea-watchboard/`](./red-sea-watchboard) | Maritime intelligence analyst | Red Sea coastline / Bab-el-Mandeb |
 | [`strait-of-hormuz-underwriting-brief/`](./strait-of-hormuz-underwriting-brief) | War-risk underwriter | Strait of Hormuz / Persian Gulf |
 | [`bauxite-supply-chain-monitor/`](./bauxite-supply-chain-monitor) | Commodity Group Risk team | Guinea + Indonesia + Australia |
 
-**🌍 Live versions** (refreshed daily):
+**🌍 Live versions** (refreshed daily, cached 24h):
 
 - [gdeltcloud.com/demos/red-sea-watchboard](https://gdeltcloud.com/demos/red-sea-watchboard)
 - [gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief](https://gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief)
@@ -18,15 +20,21 @@
 
 ## 🚢 Red Sea Threat Watchboard
 
-[![Red Sea Threat Watchboard](./red-sea-watchboard/docs/hero.jpg)](./red-sea-watchboard)
+> A maritime analyst preparing a vessel-routing brief — 7-day operating picture of the Red Sea coastline. Brent crude spot, oil/gas + LNG terminal exposure, structured incidents grouped by location, plus the top-cited article clusters.
+
+[![Red Sea Threat Watchboard](./red-sea-watchboard/docs/feature.jpg)](./red-sea-watchboard)
 
 ## ⚓ Strait of Hormuz Underwriting Brief
 
-[![Strait of Hormuz Underwriting Brief](./strait-of-hormuz-underwriting-brief/docs/hero.jpg)](./strait-of-hormuz-underwriting-brief)
+> A marine war-risk underwriter pricing a tanker hull/war policy — 7-day picture of the Strait of Hormuz with energy-asset GW exposure, Brent + WTI macro, and conflict events grouped by littoral country (Iran · Oman · UAE · Qatar).
+
+[![Strait of Hormuz Underwriting Brief](./strait-of-hormuz-underwriting-brief/docs/feature.jpg)](./strait-of-hormuz-underwriting-brief)
 
 ## 🪨 Bauxite Supply-Chain Monitor
 
-[![Bauxite Supply-Chain Monitor](./bauxite-supply-chain-monitor/docs/hero.jpg)](./bauxite-supply-chain-monitor)
+> A commodity Group Risk team monitoring the three countries that supply ~75% of global aluminum-grade bauxite — Guinea, Indonesia, Australia — with LME spot, per-country CAMEO+ score panels, and structured events split by sourcing country.
+
+[![Bauxite Supply-Chain Monitor](./bauxite-supply-chain-monitor/docs/feature.jpg)](./bauxite-supply-chain-monitor)
 
 ---
 
@@ -101,12 +109,15 @@ Every demo page on [gdeltcloud.com/demos](https://gdeltcloud.com/demos) has a **
 
 ## 🛠️ How the data is sourced
 
+GDELT Cloud codes all structured events and clusters Stories itself, using frontier LLMs against a raw article stream. These demos consume the cleaned, deduplicated output through the public v2 REST API:
+
 | Endpoint | Used for |
 |---|---|
-| `GET /api/v2/events` | Structured ACLED + CAMEO+ events — country/bbox/time-window filtered |
-| `GET /api/v2/stories` | Article-cluster narratives sized by article_count |
-| `GET /api/v2/entities` | Named people / organizations, linked to Wikipedia |
-| `GET /api/v2/energy/assets` | Global Energy Monitor infrastructure (oil/gas, LNG, etc.) |
+| `GET /api/v2/events` | Structured CAMEO+ and Conflict events — `country`, `bbox`, time-window, category/domain filtered |
+| `GET /api/v2/stories` | Clustered article narratives sized by `article_count` |
+| `GET /api/v2/entities` | Named people / organizations canonicalized via Wikipedia |
+| `GET /api/v2/energy/assets` | Global Energy Monitor infrastructure (oil/gas, LNG, etc.) — `bbox` or `country` |
+| `GET /api/v2/events/summary` | Per-country aggregate metrics (propagation, market sensitivity, systemic importance, Goldstein) for the country panel cards |
 | MCP `macro_finance` | Brent / WTI / LME aluminum spot (optional sidebar) |
 | MCP `web_research` | Tavily-sourced article snippets (optional sidebar) |
 
@@ -116,4 +127,4 @@ Every demo page on [gdeltcloud.com/demos](https://gdeltcloud.com/demos) has a **
 
 ## 📄 License
 
-MIT. Fork freely. Demo content (titles, copy) is illustrative; the underlying GDELT data is © GDELT Project.
+MIT. Fork freely. Demo content (titles, copy) is illustrative; the underlying article-stream input is © GDELT Project, and energy asset records are © Global Energy Monitor.

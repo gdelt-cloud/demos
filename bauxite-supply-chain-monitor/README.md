@@ -10,12 +10,12 @@
 
 ## 📊 What it shows
 
-- 🌐 A **per-country panel** for each of Guinea, Indonesia, and Australia — event count, story count, fatal incidents, top event, top commodity story
-- 🗺️ A **unified world map** with magnitude-sized + Goldstein-colored event markers across all three regions
-- 📋 A **"what changed this week"** table merged across all three countries, ranked by significance
-- 📈 An **LME aluminum spot price sparkline** at the top (in production: live via the GDELT Cloud MCP `macro_finance` proxy)
-- 📰 Story clusters narrating the commodity picture, anchored by `search=aluminum bauxite mining`
 - ✨ **Executive brief** with a commodity / Group-Risk takeaway
+- 🌐 A **per-country panel** for each of Guinea, Indonesia, and Australia — event count, average Goldstein severity with cooperative ↔ conflict spectrum bar, and the three CAMEO+ score bars that matter for supply-chain risk: **Propagation potential**, **Market sensitivity**, **Systemic importance**, plus average magnitude, article count, fatalities, and the top actor in window
+- 🗺️ A **unified world map** with magnitude-sized + Goldstein-colored event markers across all three regions plus toggleable Events / Stories layers
+- 📋 A **"what changed this week"** structured-events feed, **grouped by sourcing country** (Guinea · Indonesia · Australia side by side), de-duped so the same top story doesn't repeat across columns
+- 📈 An **LME aluminum spot price sparkline** sourced live from the GDELT Cloud MCP `macro_finance` proxy
+- 📰 Story clusters narrating the commodity picture, anchored by `search=aluminum bauxite mining`
 
 Pulls two endpoints, once per country (six calls total):
 
