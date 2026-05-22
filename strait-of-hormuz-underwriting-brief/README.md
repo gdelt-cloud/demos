@@ -1,20 +1,23 @@
-# GDELT Cloud Demo — Strait of Hormuz Underwriting Brief
+# ⚓ GDELT Cloud Demo — Strait of Hormuz Underwriting Brief
 
-A printable war-risk underwriting view of the Strait of Hormuz, built only on the GDELT Cloud public REST API. Sized for a marine war-risk underwriter pricing a tanker hull/war policy: 30-day operating picture, energy-asset exposure across the Persian Gulf, named entities and story clusters around Iran, with a placeholder Brent/WTI macro sidebar. Generates a single static HTML brief you can open in a browser or print to PDF.
+> A **printable war-risk underwriting view** of the Strait of Hormuz, built only on the GDELT Cloud public REST API. Sized for a marine war-risk underwriter pricing a tanker hull/war policy: 30-day operating picture, energy-asset exposure across the Persian Gulf, named entities and story clusters around Iran, with a Brent/WTI macro sidebar.
 
-**Live version:** [gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief](https://gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief)
+🌍 **Live version:** [gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief](https://gdeltcloud.com/demos/strait-of-hormuz-underwriting-brief) · 📦 **Repo:** [github.com/gdelt-cloud/demos](https://github.com/gdelt-cloud/demos/tree/main/strait-of-hormuz-underwriting-brief)
+
+![Strait of Hormuz Underwriting Brief](./docs/screenshot.jpg)
 
 ---
 
-## What it shows
+## 📊 What it shows
 
-- Structured **events** in Iran, Oman, UAE, Qatar (Strait of Hormuz littoral) over the last 30 days
-- **Energy infrastructure** (oil/gas + LNG terminals) across the Persian Gulf bbox — capacity_mw rolled up as the "energy MW at risk" headline figure
-- **Story clusters** narrating the disruption picture (≥12 articles, filtered for high signal)
-- **Named entities** linked to "Iran" search context
-- An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + asset squares
-- A **Brent / WTI macro sidebar** (placeholder values in this demo; in production sourced from the GDELT Cloud MCP `macro_finance` proxy)
-- **Print-CSS** for clean Cmd/Ctrl+P → PDF export
+- 📍 Structured **events** in Iran, Oman, UAE, Qatar (Strait of Hormuz littoral) over the last 30 days
+- 🛢️ **Energy infrastructure** (oil/gas + LNG terminals) across the Persian Gulf bbox — `capacity_mw` rolled up as the **"Energy MW at risk"** headline figure
+- 📰 **Story clusters** narrating the disruption picture (≥12 articles, filtered for high signal)
+- 👥 **Named entities** linked to "Iran" search context
+- 🗺️ An interactive **Leaflet map** with magnitude-sized + Goldstein-colored event markers + asset squares
+- 📈 A **Brent / WTI macro sidebar** (in production: sourced from the GDELT Cloud MCP `macro_finance` proxy)
+- 🖨️ **Print-CSS** for clean Cmd/Ctrl+P → PDF export
+- ✨ **Executive brief** with a war-risk-underwriter takeaway (e.g. "premium uplift 15-35bps")
 
 Pulls four endpoints:
 
@@ -27,13 +30,13 @@ GET /api/v2/energy/assets?bbox=24,49,30,57&tracker=oil_gas_plants,lng_terminals
 
 ---
 
-## Run it
+## 🚀 Run it
 
 ### Prerequisites
 
-- Python 3.11+
-- [`uv`](https://docs.astral.sh/uv/) installed
-- A GDELT Cloud API key — get one at [gdeltcloud.com/api-keys](https://gdeltcloud.com/api-keys)
+- 🐍 Python 3.11+
+- 📦 [`uv`](https://docs.astral.sh/uv/) installed
+- 🔑 A GDELT Cloud API key — get one at [gdeltcloud.com/api-keys](https://gdeltcloud.com/api-keys)
 
 ### One-shot
 
@@ -49,27 +52,16 @@ uv run python -m hormuz
 Output:
 
 ```
-GDELT Cloud · Strait of Hormuz Underwriting Brief · 2026-04-21 → 2026-05-21
+GDELT Cloud · Strait of Hormuz Underwriting Brief · 2026-04-22 → 2026-05-21
 Base URL: https://gdeltcloud.com
-Fetched: 84 events · 31 stories · 17 entities · 22 energy assets
+Fetched: 100 events · 26 stories · 20 entities · 60 energy assets (75.0 GW)
 
 ✓ Rendered: /path/to/demos/strait-of-hormuz-underwriting-brief/output/index.html
-  Open in browser:  file:///path/to/output/index.html
-  Or serve locally: python -m http.server --directory output
 ```
 
-Open `output/index.html` in your browser. Print to PDF works out of the box (Cmd/Ctrl+P) — the print CSS removes the map controls and tightens the layout.
+📂 Open `output/index.html` in your browser. 🖨️ Print to PDF works out of the box (Cmd/Ctrl+P) — the print CSS removes the map controls and tightens the layout.
 
 ### Custom window
-
-Either edit `.env`:
-
-```
-HORMUZ_DATE_START=2026-03-22
-HORMUZ_DATE_END=2026-04-20
-```
-
-…or pass env vars inline:
 
 ```bash
 HORMUZ_DATE_START=2026-03-22 HORMUZ_DATE_END=2026-04-20 uv run python -m hormuz
@@ -77,12 +69,35 @@ HORMUZ_DATE_START=2026-03-22 HORMUZ_DATE_END=2026-04-20 uv run python -m hormuz
 
 ---
 
-## Customize it
+## 🤖 Hand it to your coding agent
 
-The demo is intentionally short — ~5 files of Python — so you can swap region, commodity, or persona.
+> **There's a [`SKILL.md`](./SKILL.md) in this repo.** Hand it to your coding agent — Claude Code, Cursor, Copilot CLI — and ask it to scaffold a variant for your chokepoint, your peril, or your underwriting persona.
 
-| To change | Edit |
-|-----------|------|
+### 💬 Example prompts
+
+```text
+Use this SKILL.md to build an Eastern Mediterranean war-risk brief for
+the cargo + hull renewal cycle.
+```
+
+```text
+Build a Black Sea grain corridor underwriting brief — same shape, but
+country net = UKR + TUR + BGR + ROU, anchored on Black Sea Fleet entities.
+```
+
+```text
+Adapt this for an aviation war-risk underwriter — swap the energy bbox for
+the airspace bbox + air-traffic-control entity anchor.
+```
+
+---
+
+## 🛠️ Customize it
+
+The demo is intentionally short — ~6 Python files — so you can swap region, peril, or persona.
+
+| 🎯 To change | 📝 Edit |
+|---|---|
 | Country net | `src/hormuz/fetch.py` → `COUNTRIES` |
 | Asset bbox | `src/hormuz/fetch.py` → `ASSETS_BBOX` |
 | Entity search | `src/hormuz/fetch.py` → `client.entities(search=...)` |
@@ -92,11 +107,9 @@ The demo is intentionally short — ~5 files of Python — so you can swap regio
 | Macro sidebar values | `templates/index.html.j2` → Brent/WTI sparkline block |
 | Branding / copy | `templates/index.html.j2` |
 
-There's a `SKILL.md` in this repo — hand it to your coding agent (Claude Code, Cursor, Copilot CLI) and ask it to scaffold a variant for your chokepoint, your peril, or your underwriting persona.
-
 ---
 
-## How it works
+## 🧰 How it works
 
 ```
 src/hormuz/
@@ -110,10 +123,10 @@ templates/
   index.html.j2 # Tailwind via CDN + Leaflet via CDN + print CSS
 ```
 
-The output is a single self-contained HTML file. No backend, no build step.
+The output is a **single self-contained HTML file**. No backend, no build step.
 
 ---
 
-## License
+## 📄 License
 
 MIT — fork freely.
